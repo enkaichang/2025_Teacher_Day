@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闖關問答</title>
+    <!-- 引入 Tailwind CSS CDN，用於快速美化介面 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f4f8; /* 淺灰色背景 */
+            color: #1a202c; /* 深色文字 */
+        }
+        /* 自定義拉桿樣式 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #cbd5e0;
+            border-radius: 5px;
+            outline: none;
+            transition: opacity .2s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* 藍色滑塊 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* 藍色滑塊 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        @keyframes correct-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(60, 179, 113, 0.5); border: 2px solid transparent; }
+            50% { transform: scale(1.02); box-shadow: 0 0 30px #3cb371; border: 2px solid #3cb371; } /* 亮綠色 */
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(60, 179, 113, 0.5); border: 2px solid transparent; }
+        }
+        @keyframes uncorrect-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); border: 2px solid transparent; }
+            50% { transform: scale(1.02); box-shadow: 0 0 30px #ff0000; border: 2px solid #ff0000; } /* 紅色 */
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); border: 2px solid transparent; }
+        }
+        .animate-correct {
+            animation: correct-pulse 0.5s ease-in-out;
+        }
+        .animate-uncorrect {
+            animation: uncorrect-pulse 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- 主遊戲容器 -->
+    <div id="game-container" class="bg-white text-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-lg text-center transition-all duration-300 transform scale-100">
+        <h1 class="text-3xl font-bold mb-4 text-blue-600">2025 教師節大挑戰</h1>
+
+        <!-- 遊戲狀態區域 -->
+        <div id="game-status" class="mb-6 space-y-2" style="display: none;">
+            <div class="text-xl font-semibold">
+                <span id="timer-display" class="text-gray-600">⏰: 0秒</span>
+            </div>
+            <div id="message-display" class="h-6 text-sm font-medium text-amber-500" style="display: none;"></div>
+        </div>
+        <p id="game-description_1" class="text-sm text-gray-600 mt-2 mb-4">由數學無法黨開發🖥️ For <strong>楊欣璇</strong>老師👩‍🏫</p>
+        <p id="game-description_2" class="text-sm text-gray-600 mt-2 mb-4">在忍受學生的荒謬後 回到數學的美好世界🌈</p>
+        <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300" onclick="startGame();">開始遊戲</button>
+
+        <!-- 問題容器 -->
+        <div id="question-container">
+            <!-- 這裡將由 JavaScript 動態生成內容 -->
+        </div>
+    </div>
+
+    <!-- 遊戲邏輯 JavaScript -->
+    <script>
+        const questionContainer = document.getElementById('question-container');
+        const timerDisplay = document.getElementById('timer-display');
+        const messageDisplay = document.getElementById('message-display');
+        // 取得主遊戲容器元素
+        const gameContainer = document.getElementById('game-container'); 
+        
+        // 定義問題資料
+        const questions = [
+            // ... (問題資料不變) ...
+            {
+                question: "9.28² 四捨五入至個位數是多少？",
+                remark: "熱身題",
+                type: "slider",
+                answer: 86,
+                min: 20,
+                max: 100,
+                step: 1
+            },
+            {
+                question: "a = xʸ × 29 , b = 3⁴ × yˣ ， x 與 y為質數， x < y ， a 與 b互質， 500 < a < 1000, 1000 < b < 3000， 試求 a + 1000b。",
+                remark: "關鍵題",
+                type: "text",
+                answer: "2025928",
+            },
+            {
+                question: "「數學無法黨」五字共有幾筆畫？",
+                remark: "國文題",
+                type: "text",
+                answer: "71",
+            },
+            {
+                question: "老師第一次上二班的課，第一個見到二班的人是誰？",
+                remark: "師生感情考驗題",
+                type: "multiple-choice",
+                answer: "正在推平板車的張恩愷",
+                options: ["正在推平板車的張恩愷", "正在進教室的主席", "走進教室才看見全班"]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let startTime = null;
+        let timerInterval = null;
+
+        // 啟動計時器
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                timerDisplay.textContent = `⏰: ${elapsedTime}秒`;
+            }, 1000);
+        }
+
+        // 顯示訊息並在指定時間後清除 (調整了正確訊息的樣式)
+        /*
+        function showMessage(text, isCorrect = true) {
+            messageDisplay.style.display = 'block';
+            messageDisplay.textContent = text;
+            // 答對時使用更醒目的綠色
+            messageDisplay.className = `h-6 text-xl font-extrabold transition-colors duration-300 ${isCorrect ? 'text-green-600' : 'text-red-500'}`; 
+            setTimeout(() => {
+                messageDisplay.style.display = 'none';
+                messageDisplay.className = `h-6 text-sm font-medium transition-colors duration-300 text-amber-500`; // 恢復初始樣式或保持隱藏
+            }, 1000);
+        }
+        */
+
+
+        // 渲染當前問題 (不變)
+        function renderQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endGame();
+                return;
+            }
+
+            const q = questions[currentQuestionIndex];
+            questionContainer.innerHTML = ''; // 清空容器
+            
+            // 問題標題
+            const questionTitle = document.createElement('div');
+            questionTitle.innerHTML = "<p class='text-xl md:text-2xl font-semibold mb-4 text-gray-700'><span class='text-blue-600 font-bold'># " + (currentQuestionIndex + 1) + "</span> " + q.question + "</p> <p class='text-sm text-gray-600'>" + q.remark + "</p>";
+            questionContainer.appendChild(questionTitle);
+
+            if (q.type === 'slider') {
+                // 渲染拉桿問題
+                const sliderValueDisplay = document.createElement('div');
+                sliderValueDisplay.id = 'slider-value';
+                sliderValueDisplay.className = 'text-3xl font-bold text-blue-600 my-4';
+                sliderValueDisplay.textContent = q.min;
+                questionContainer.appendChild(sliderValueDisplay);
+
+                const sliderInput = document.createElement('input');
+                sliderInput.type = 'range';
+                sliderInput.className = 'w-full';
+                sliderInput.min = q.min;
+                sliderInput.max = q.max;
+                sliderInput.step = q.step;
+                sliderInput.value = q.min;
+                sliderInput.oninput = (e) => {
+                    sliderValueDisplay.textContent = e.target.value;
+                };
+                questionContainer.appendChild(sliderInput);
+
+                const confirmButton = document.createElement('button');
+                confirmButton.className = 'mt-6 px-6 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-colors duration-200 shadow-md';
+                confirmButton.textContent = '確認';
+                confirmButton.onclick = () => checkAnswer(parseInt(sliderInput.value));
+                questionContainer.appendChild(confirmButton);
+
+            } else if (q.type === 'multiple-choice') {
+                // 渲染選擇題
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 mt-6';
+                q.options.forEach(option => {
+                    const optionButton = document.createElement('button');
+                    optionButton.className = 'px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium shadow-md';
+                    optionButton.textContent = option;
+                    optionButton.onclick = () => checkAnswer(option);
+                    optionsContainer.appendChild(optionButton);
+                });
+                questionContainer.appendChild(optionsContainer);
+            } else if (q.type === 'text') {
+                // 渲染簡答題
+                const textInput = document.createElement('input');
+                textInput.type = 'text';
+                textInput.placeholder = '請輸入你的答案...';
+                textInput.className = 'w-full px-4 py-3 bg-gray-200 text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4';
+                questionContainer.appendChild(textInput);
+
+                const confirmButton = document.createElement('button');
+                confirmButton.className = 'mt-6 px-6 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-colors duration-200 shadow-md';
+                confirmButton.textContent = '確認';
+                confirmButton.onclick = () => checkAnswer(textInput.value);
+                questionContainer.appendChild(confirmButton);
+            }
+        }
+
+        // 檢查答案 (加入了華麗動畫)
+        function checkAnswer(userAnswer) {
+            const q = questions[currentQuestionIndex];
+            // 將所有輸入轉為字串並移除空白後比較，以適應不同輸入類型
+            const normalizedUserAnswer = String(userAnswer).trim(); 
+            const normalizedCorrectAnswer = String(q.answer).trim();
+
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                // 1. 顯示正確訊息
+                // showMessage('答對了！太棒了！', true);
+
+                // 2. 觸發華麗動畫
+                gameContainer.classList.add('animate-correct');
+                
+                // 3. 延遲後移除動畫 class，並進入下一題
+                currentQuestionIndex++;
+                setTimeout(() => {
+                    gameContainer.classList.remove('animate-correct'); // 移除動畫效果
+                    renderQuestion(); // 顯示下一題
+                }, 500); // 動畫持續 0.5 秒後進行下一步
+
+            } else {
+                // showMessage('錯誤，請再試一次。', false);
+                gameContainer.classList.add('animate-uncorrect');
+
+                setTimeout(() => {
+                    gameContainer.classList.remove('animate-uncorrect'); // 移除動畫效果
+                }, 500); // 動畫持續 0.5 秒
+            }
+        }
+
+        // 遊戲結束 (不變)
+        function endGame() {
+            clearInterval(timerInterval);
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            questionContainer.innerHTML = `
+                <p class="text-4xl font-extrabold text-green-500 animate-pulse">🎉 通關！完美！ 🎉</p>
+                <p class="text-xl mt-4 text-gray-700">遊戲結束</p>
+                <p class="text-lg mt-2 mb-6 text-gray-600">你總共花費了 <span class="text-blue-600 font-bold">${elapsedTime}</span> 秒</p>
+                <p class="text-xl mt-2 text-gray-600"><strong>🎁 截圖傳給張恩愷，已領取獎勵。</strong> </p>
+            `;
+            // 隱藏計時器
+            document.getElementById('game-status').style.display = 'none'; // 隱藏整個狀態區塊，包含計時器
+        }
+
+        function startGame() {
+            // 遊戲開始
+            startTimer();
+            renderQuestion();
+            document.getElementById('game-status').style.display = 'block';
+            document.getElementById('game-description_1').style.display = 'none';
+            document.getElementById('game-description_2').style.display = 'none';
+            document.getElementById('start-button').style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
